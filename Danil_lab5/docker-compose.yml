@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  pg_primary:
+    image: postgres:16
+    container_name: pg_primary
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: lizaliza123
+      POSTGRES_DB: admin_db
+    command: >
+      postgres
+      -c wal_level=replica
+      -c max_wal_senders=10
+      -c wal_keep_size=64
+      -c archive_mode=on
+      -c archive_command='cd .'
+      -c logging_collector=on
+      -c log_min_duration_statement=1000
+      -c log_directory=pg_log
+      -c log_filename='postgresql-%Y-%m-%d_%H%M%S.log'
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_primary_data:/var/lib/postgresql/data
+      - ./logs:/var/log/postgresql
+
+  pg_replica:
+    image: postgres:16
+    container_name: pg_replica
+    environment:
+      POSTGRES_PASSWORD: lizaliza123
+    depends_on:
+      - pg_primary
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_replica_data:/var/lib/postgresql/data
+    command: >
+      postgres
+      -c hot_standby=on
+      -c logging_collector=on
+      -c log_min_duration_statement=1000
+      -c log_directory=pg_log
+      -c log_filename='postgresql-%Y-%m-%d_%H%M%S.log'
+
+volumes:
+  pg_primary_data:
+  pg_replica_data:
